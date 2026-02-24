@@ -120,7 +120,25 @@ else
   success "已写入 myclaw 命令到 $SHELL_RC"
 fi
 
-# ── 5. 配置 API Key ──────────────────────────────────────────────────────
+# ── 5. 配置授权码 ────────────────────────────────────────────────────────
+echo ""
+printf "${BOLD}  第 2 步：配置授权码${NC}\n"
+echo "  ────────────────────────────────────"
+echo "  授权码用于激活 MyClaw 完整功能。"
+echo ""
+echo "  获取方式："
+echo "  1. 访问 https://myclaw.cldev.top/"
+echo "  2. 注册/登录 → 进入「控制台」→ 复制授权码"
+echo "  （新用户注册即可获得免费授权码）"
+echo ""
+
+LICENSE_KEY=""
+while [[ -z "$LICENSE_KEY" ]]; do
+  read_tty "  请输入授权码: " LICENSE_KEY
+  [[ -z "$LICENSE_KEY" ]] && warn "授权码不能为空，请重新输入"
+done
+
+# ── 6. 配置 API Key ──────────────────────────────────────────────────────
 echo ""
 printf "${BOLD}  第 1 步：配置 API Key${NC}\n"
 echo "  ────────────────────────────────────"
@@ -142,24 +160,6 @@ API_KEY=""
 while [[ -z "$API_KEY" ]]; do
   read_tty "  请输入 API Key: " API_KEY
   [[ -z "$API_KEY" ]] && warn "API Key 不能为空，请重新输入"
-done
-
-# ── 6. 配置授权码 ────────────────────────────────────────────────────────
-echo ""
-printf "${BOLD}  第 2 步：配置授权码${NC}\n"
-echo "  ────────────────────────────────────"
-echo "  授权码用于激活 MyClaw 完整功能。"
-echo ""
-echo "  获取方式："
-echo "  1. 访问 https://myclaw.cldev.top/"
-echo "  2. 注册/登录 → 进入「控制台」→ 复制授权码"
-echo "  （新用户注册即可获得免费授权码）"
-echo ""
-
-LICENSE_KEY=""
-while [[ -z "$LICENSE_KEY" ]]; do
-  read_tty "  请输入授权码: " LICENSE_KEY
-  [[ -z "$LICENSE_KEY" ]] && warn "授权码不能为空，请重新输入"
 done
 
 # ── 7. 写入配置文件 ──────────────────────────────────────────────────────

@@ -43,21 +43,24 @@ try {
 } catch {}
 
 if (-not $javaOk) {
-    Warn "未找到 Java 17+，将自动安装 JRE 17..."
+    Warn "未找到 Java 17+，将自动安装 JDK 17..."
 
     $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq "Arm64") { "aarch64" } else { "x64" }
     $jreDir = "$INSTALL_DIR\jre"
     New-Item -ItemType Directory -Force -Path $jreDir | Out-Null
 
-    # 多源下载：先试 Amazon Corretto（AWS CDN，国内可访问），再试 Adoptium
+    # 多源下载：Corretto → Adoptium → 自有服务器兜底（仅 x64 有包，Windows ARM 无自有包）
     $jreDownloadUrls = @(
         "https://corretto.aws/downloads/latest/amazon-corretto-17-$arch-windows-jdk.zip",
         "https://api.adoptium.net/v3/binary/latest/17/ga/windows/$arch/jre/hotspot/normal/eclipse"
     )
+    if ($arch -eq "x64") {
+        $jreDownloadUrls += "https://myclawpackage.cldev.top/jdk-17.0.18_windows-x64_bin.zip"
+    }
     $downloadOk = $false
     foreach ($jreUrl in $jreDownloadUrls) {
         $sourceName = $jreUrl.Split('/')[2]
-        Info "正在下载 JRE 17（windows/$arch，来源：$sourceName）..."
+        Info "正在下载 JDK 17（windows/$arch，来源：$sourceName）..."
         try {
             Invoke-WebRequest -Uri $jreUrl -OutFile "$env:TEMP\myclaw_jre.zip" -UseBasicParsing -TimeoutSec 120
             $downloadOk = $true
@@ -84,7 +87,7 @@ if (-not $javaOk) {
     Remove-Item $jreTmp -Recurse -Force -ErrorAction SilentlyContinue
 
     $javaHomeCustom = $jreDir
-    Success "JRE 17 已安装到 $jreDir"
+    Success "JDK 17 已安装到 $jreDir"
 }
 
 # ── 3. 下载 & 解压 MyClaw ────────────────────────────────────────────────

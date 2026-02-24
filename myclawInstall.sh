@@ -54,8 +54,8 @@ else
   OS="$(uname -s)"
   ARCH="$(uname -m)"
   case "$OS" in
-    Darwin) ADOPT_OS="mac"   ;;
-    Linux)  ADOPT_OS="linux" ;;
+    Darwin) ADOPT_OS="mac";   SELF_OS="macos" ;;
+    Linux)  ADOPT_OS="linux"; SELF_OS="linux"  ;;
     *) err "不支持的操作系统: $OS" ;;
   esac
   case "$ARCH" in
@@ -67,16 +67,39 @@ else
   JRE_DIR="$INSTALL_DIR/jre"
   mkdir -p "$JRE_DIR"
 
-  JRE_URL="https://api.adoptium.net/v3/binary/latest/17/ga/${ADOPT_OS}/${ADOPT_ARCH}/jre/hotspot/normal/eclipse"
-  info "正在下载 JRE 17（${ADOPT_OS}/${ADOPT_ARCH}）..."
-  curl -fsSL -L "$JRE_URL" -o /tmp/myclaw_jre.tar.gz || err "JRE 17 下载失败，请检查网络连接"
+  # 多源下载：Adoptium → Corretto → 自有服务器兜底（全平台均有包）
+  JRE_URLS=(
+    "https://api.adoptium.net/v3/binary/latest/17/ga/${ADOPT_OS}/${ADOPT_ARCH}/jre/hotspot/normal/eclipse"
+    "https://corretto.aws/downloads/latest/amazon-corretto-17-${ADOPT_ARCH}-${SELF_OS}-jdk.tar.gz"
+    "https://myclawpackage.cldev.top/jdk-17.0.18_${SELF_OS}-${ADOPT_ARCH}_bin.tar.gz"
+  )
+
+  JRE_DOWNLOADED=false
+  for JRE_URL in "${JRE_URLS[@]}"; do
+    SOURCE=$(printf '%s' "$JRE_URL" | cut -d/ -f3)
+    info "正在下载 JRE 17（${ADOPT_OS}/${ADOPT_ARCH}，来源：${SOURCE}）..."
+    if curl -fsSL -L --connect-timeout 30 --max-time 300 "$JRE_URL" -o /tmp/myclaw_jre.tar.gz; then
+      JRE_DOWNLOADED=true
+      break
+    else
+      warn "从 ${SOURCE} 下载失败，尝试备用源..."
+    fi
+  done
+  $JRE_DOWNLOADED || err "JRE 17 下载失败，请手动安装 Java 17 后重试"
 
   info "正在解压 JRE..."
   tar -xzf /tmp/myclaw_jre.tar.gz -C "$JRE_DIR" --strip-components=1
   rm -f /tmp/myclaw_jre.tar.gz
 
-  JAVA_HOME_CUSTOM="$JRE_DIR"
-  success "JRE 17 已安装到 $JRE_DIR"
+  # Oracle/Corretto 的 macOS JDK 解压后为 Contents/Home/ 结构，Adoptium 是扁平的
+  if [[ -x "$JRE_DIR/bin/java" ]]; then
+    JAVA_HOME_CUSTOM="$JRE_DIR"
+  elif [[ -x "$JRE_DIR/Contents/Home/bin/java" ]]; then
+    JAVA_HOME_CUSTOM="$JRE_DIR/Contents/Home"
+  else
+    err "JDK 解压后未找到 java 可执行文件，请手动安装 Java 17 后重试"
+  fi
+  success "JDK 17 已安装到 $JAVA_HOME_CUSTOM"
 fi
 
 # ── 3. 下载 & 解压 MyClaw ────────────────────────────────────────────────

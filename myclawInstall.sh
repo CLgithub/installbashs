@@ -151,7 +151,7 @@ echo "  ────────────────────────
 echo "  授权码用于激活 MyClaw 完整功能。"
 echo ""
 echo "  获取方式："
-echo "  1. 访问 https://myclaw.chenlei.app/"
+echo "  1. 访问 https://myclaw.cldev.top/"
 echo "  2. 注册/登录 → 进入「控制台」→ 复制授权码"
 echo "  （新用户注册即可获得免费授权码）"
 echo ""

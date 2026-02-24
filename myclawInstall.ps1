@@ -3,12 +3,13 @@
 #Requires -Version 5.1
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference    = "SilentlyContinue"   # 禁用进度条，避免干扰输出且可加速大文件下载
 
 # ── 辅助函数 ────────────────────────────────────────────────────────────
 function Info    { param($msg) Write-Host "  [>] $msg" -ForegroundColor Cyan }
 function Success { param($msg) Write-Host "  [v] $msg" -ForegroundColor Green }
 function Warn    { param($msg) Write-Host "  [!] $msg" -ForegroundColor Yellow }
-function Err     { param($msg) Write-Host "  [x] $msg" -ForegroundColor Red; exit 1 }
+function Err     { param($msg) Write-Host "  [x] $msg" -ForegroundColor Red; Write-Host ""; Write-Host "  按任意键退出..." -ForegroundColor Gray; try { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") } catch {}; exit 1 }
 
 # ── 配置 ────────────────────────────────────────────────────────────────
 $INSTALL_DIR = "$HOME\myclaw"
@@ -48,18 +49,36 @@ if (-not $javaOk) {
     $jreDir = "$INSTALL_DIR\jre"
     New-Item -ItemType Directory -Force -Path $jreDir | Out-Null
 
-    $jreUrl = "https://api.adoptium.net/v3/binary/latest/17/ga/windows/$arch/jre/hotspot/normal/eclipse"
-    Info "正在下载 JRE 17（windows/$arch）..."
-    try {
-        Invoke-WebRequest -Uri $jreUrl -OutFile "$env:TEMP\myclaw_jre.zip" -UseBasicParsing
-    } catch {
-        Err "JRE 17 下载失败，请检查网络连接: $_"
+    # 多源下载：先试 Amazon Corretto（AWS CDN，国内可访问），再试 Adoptium
+    $jreDownloadUrls = @(
+        "https://corretto.aws/downloads/latest/amazon-corretto-17-$arch-windows-jdk.zip",
+        "https://api.adoptium.net/v3/binary/latest/17/ga/windows/$arch/jre/hotspot/normal/eclipse"
+    )
+    $downloadOk = $false
+    foreach ($jreUrl in $jreDownloadUrls) {
+        $sourceName = $jreUrl.Split('/')[2]
+        Info "正在下载 JRE 17（windows/$arch，来源：$sourceName）..."
+        try {
+            Invoke-WebRequest -Uri $jreUrl -OutFile "$env:TEMP\myclaw_jre.zip" -UseBasicParsing -TimeoutSec 120
+            $downloadOk = $true
+            break
+        } catch {
+            Warn "从 $sourceName 下载失败，尝试备用源..."
+        }
+    }
+    if (-not $downloadOk) {
+        Err "JRE 17 下载失败。请手动安装 Java 17（https://adoptium.net），安装后重新运行本脚本。"
     }
 
     Info "正在解压 JRE..."
     $jreTmp = "$env:TEMP\myclaw_jre_tmp"
-    Expand-Archive -Path "$env:TEMP\myclaw_jre.zip" -DestinationPath $jreTmp -Force
+    try {
+        Expand-Archive -Path "$env:TEMP\myclaw_jre.zip" -DestinationPath $jreTmp -Force
+    } catch {
+        Err "JRE 解压失败（文件可能已损坏，请重试）: $_"
+    }
     $jreExtracted = Get-ChildItem $jreTmp | Select-Object -First 1
+    if (-not $jreExtracted) { Err "JRE 解压目录为空，请重试" }
     Copy-Item -Path "$($jreExtracted.FullName)\*" -Destination $jreDir -Recurse -Force
     Remove-Item "$env:TEMP\myclaw_jre.zip" -Force -ErrorAction SilentlyContinue
     Remove-Item $jreTmp -Recurse -Force -ErrorAction SilentlyContinue
@@ -78,7 +97,11 @@ try {
 
 Info "正在解压到 $INSTALL_DIR ..."
 New-Item -ItemType Directory -Force -Path $INSTALL_DIR | Out-Null
-Expand-Archive -Path "$env:TEMP\myclaw_install.zip" -DestinationPath $INSTALL_DIR -Force
+try {
+    Expand-Archive -Path "$env:TEMP\myclaw_install.zip" -DestinationPath $INSTALL_DIR -Force
+} catch {
+    Err "MyClaw 解压失败（文件可能已损坏，请重试）: $_"
+}
 Remove-Item "$env:TEMP\myclaw_install.zip" -Force -ErrorAction SilentlyContinue
 Success "程序已安装到 $INSTALL_DIR"
 

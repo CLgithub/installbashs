@@ -13,6 +13,13 @@ success() { printf "${GREEN}✓${NC}  %s\n" "$*"; }
 warn()    { printf "${YELLOW}⚠${NC}  %s\n" "$*"; }
 err()     { printf "${RED}✗${NC}  %s\n" "$*" >&2; exit 1; }
 
+# curl | bash 时 stdin 被管道占用，read 必须从终端读取
+read_tty() {
+  local prompt="$1" varname="$2"
+  printf "%s" "$prompt" > /dev/tty
+  read -r "$varname" < /dev/tty
+}
+
 # ── 配置 ────────────────────────────────────────────────────────────────
 INSTALL_DIR="$HOME/myclaw"
 ZIP_URL="https://myclawpack.cldev.top/myclaw-latest.zip"
@@ -39,14 +46,11 @@ check_java_version() {
 
 info "检查 Java 环境..."
 
-SYSTEM_JAVA=""
 if command -v java >/dev/null 2>&1 && check_java_version "java"; then
-  SYSTEM_JAVA="java"
   success "已检测到 Java $(java -version 2>&1 | head -1 | sed -E 's/.*version "(.*)".*/\1/')，无需另行安装"
 else
   warn "未找到 Java 17+，将自动安装 JRE 17..."
 
-  # 检测系统架构
   OS="$(uname -s)"
   ARCH="$(uname -m)"
   case "$OS" in
@@ -55,7 +59,7 @@ else
     *) err "不支持的操作系统: $OS" ;;
   esac
   case "$ARCH" in
-    x86_64)  ADOPT_ARCH="x64"     ;;
+    x86_64)        ADOPT_ARCH="x64"     ;;
     aarch64|arm64) ADOPT_ARCH="aarch64" ;;
     *) err "不支持的 CPU 架构: $ARCH" ;;
   esac
@@ -63,7 +67,6 @@ else
   JRE_DIR="$INSTALL_DIR/jre"
   mkdir -p "$JRE_DIR"
 
-  # 从 Adoptium 下载最新 JRE 17
   JRE_URL="https://api.adoptium.net/v3/binary/latest/17/ga/${ADOPT_OS}/${ADOPT_ARCH}/jre/hotspot/normal/eclipse"
   info "正在下载 JRE 17（${ADOPT_OS}/${ADOPT_ARCH}）..."
   curl -fsSL -L "$JRE_URL" -o /tmp/myclaw_jre.tar.gz || err "JRE 17 下载失败，请检查网络连接"
@@ -98,7 +101,6 @@ else
   SHELL_RC="$HOME/.bashrc"
 fi
 
-# 写入 JAVA_HOME（仅在自装 JRE 时）
 if [[ -n "$JAVA_HOME_CUSTOM" ]]; then
   if grep -qF "MYCLAW_JAVA_HOME" "$SHELL_RC" 2>/dev/null; then
     warn "JAVA_HOME 配置已存在，跳过"
@@ -107,11 +109,9 @@ if [[ -n "$JAVA_HOME_CUSTOM" ]]; then
       "$JAVA_HOME_CUSTOM" >> "$SHELL_RC"
     success "已写入 JAVA_HOME 到 $SHELL_RC"
   fi
-  # 当前 session 立即生效
   export PATH="$JAVA_HOME_CUSTOM/bin:$PATH"
 fi
 
-# 写入 myclaw 别名
 ALIAS_LINE="alias myclaw='sh $INSTALL_DIR/myclaw.sh'"
 if grep -qF "alias myclaw=" "$SHELL_RC" 2>/dev/null; then
   warn "快捷命令 myclaw 已存在，跳过"
@@ -138,10 +138,10 @@ echo "    1. 访问 https://platform.openai.com/api-keys"
 echo "    2. 点击「Create new secret key」→ 复制密钥"
 echo ""
 
-while true; do
-  read -rp "  请输入 API Key: " API_KEY
-  [[ -n "$API_KEY" ]] && break
-  warn "API Key 不能为空，请重新输入"
+API_KEY=""
+while [[ -z "$API_KEY" ]]; do
+  read_tty "  请输入 API Key: " API_KEY
+  [[ -z "$API_KEY" ]] && warn "API Key 不能为空，请重新输入"
 done
 
 # ── 6. 配置授权码 ────────────────────────────────────────────────────────
@@ -156,10 +156,10 @@ echo "  2. 注册/登录 → 进入「控制台」→ 复制授权码"
 echo "  （新用户注册即可获得免费授权码）"
 echo ""
 
-while true; do
-  read -rp "  请输入授权码: " LICENSE_KEY
-  [[ -n "$LICENSE_KEY" ]] && break
-  warn "授权码不能为空，请重新输入"
+LICENSE_KEY=""
+while [[ -z "$LICENSE_KEY" ]]; do
+  read_tty "  请输入授权码: " LICENSE_KEY
+  [[ -z "$LICENSE_KEY" ]] && warn "授权码不能为空，请重新输入"
 done
 
 # ── 7. 写入配置文件 ──────────────────────────────────────────────────────

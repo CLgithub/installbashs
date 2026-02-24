@@ -195,19 +195,12 @@ fi
 
 success "配置已写入 $CONFIG_FILE"
 
-# ── 8. source Shell 配置 ─────────────────────────────────────────────────
-# 临时关闭 set -e，避免 RC 文件中的非零退出码中断脚本
-set +e
-# shellcheck disable=SC1090
-source "$SHELL_RC" 2>/dev/null
-SOURCE_EXIT=$?
-set -e
-[[ $SOURCE_EXIT -eq 0 ]] && success "已加载 $SHELL_RC" || warn "source 失败，请手动执行: source $SHELL_RC"
-
-# ── 完成 ─────────────────────────────────────────────────────────────────
+# ── 8. 完成 ──────────────────────────────────────────────────────────────
 echo ""
 printf "${GREEN}${BOLD}  ✓ MyClaw 安装完成！${NC}\n"
 echo "  ────────────────────────────────────"
-printf "  当前终端运行: ${BOLD}myclaw${NC}\n"
-printf "  或直接运行:   ${BOLD}sh $INSTALL_DIR/myclaw.sh${NC}\n"
+printf "  执行以下命令使配置立即生效:\n"
+printf "  ${BOLD}source %s${NC}\n" "$SHELL_RC"
+echo ""
+printf "  之后运行: ${BOLD}myclaw${NC}\n"
 echo ""

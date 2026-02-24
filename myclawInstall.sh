@@ -22,7 +22,7 @@ read_tty() {
 
 # ── 配置 ────────────────────────────────────────────────────────────────
 INSTALL_DIR="$HOME/myclaw"
-ZIP_URL="https://myclawpack.cldev.top/myclaw-latest.zip"
+ZIP_URL="https://myclawpackage.cldev.top/myclaw-latest.zip"
 
 echo ""
 printf "${BOLD}  MyClaw 安装程序${NC}\n"

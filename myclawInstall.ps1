@@ -82,7 +82,114 @@ Expand-Archive -Path "$env:TEMP\myclaw_install.zip" -DestinationPath $INSTALL_DI
 Remove-Item "$env:TEMP\myclaw_install.zip" -Force -ErrorAction SilentlyContinue
 Success "程序已安装到 $INSTALL_DIR"
 
-# ── 4. 配置环境变量 ──────────────────────────────────────────────────────
+# ── 4. 创建 myclaw.bat ───────────────────────────────────────────────────
+Info "创建 myclaw.bat 启动脚本..."
+
+$batContent = @'
+@echo off
+setlocal enabledelayedexpansion
+
+set "SCRIPT_DIR=%~dp0"
+set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+
+:: 查找 JAR 文件（与脚本同目录）
+set "JAR="
+for %%f in ("%SCRIPT_DIR%\myclaw-*-jar-with-dependencies.jar") do set "JAR=%%f"
+
+if not defined JAR (
+    echo 错误: 找不到 JAR 文件，请确认 JAR 与 myclaw.bat 在同一目录
+    pause
+    exit /b 1
+)
+
+:: 优先使用自带 JRE
+set "JAVA_CMD=java"
+if exist "%SCRIPT_DIR%\jre\bin\java.exe" set "JAVA_CMD=%SCRIPT_DIR%\jre\bin\java.exe"
+
+:: 自动加载同目录下的配置文件
+set "CONFIG_ARG="
+if exist "%SCRIPT_DIR%\application.properties" set "CONFIG_ARG=--config=%SCRIPT_DIR%\application.properties"
+
+:: 解析 --config= --port= 参数
+set "PORT_ARG="
+for %%a in (%*) do (
+    echo %%a | findstr /b /c:"--config=" >nul && set "CONFIG_ARG=%%a"
+    echo %%a | findstr /b /c:"--port="   >nul && set "PORT_ARG=%%a"
+)
+
+set "DAEMON_DIR=%USERPROFILE%\.myclaw"
+
+if "%1"=="daemon"        goto :daemon
+if "%1"=="-i"            goto :interactive
+if "%1"=="--interactive" goto :interactive
+goto :interactive
+
+:daemon
+if "%2"=="start"   goto :daemon_start
+if "%2"=="stop"    goto :daemon_stop
+if "%2"=="status"  goto :daemon_status
+if "%2"=="restart" goto :daemon_restart
+echo 用法: myclaw.bat daemon {start^|stop^|status^|restart}
+exit /b 1
+
+:daemon_start
+if not exist "%DAEMON_DIR%" mkdir "%DAEMON_DIR%"
+if exist "%DAEMON_DIR%\daemon.pid" (
+    set /p _PID=<"%DAEMON_DIR%\daemon.pid"
+    tasklist /fi "pid eq !_PID!" 2>nul | findstr /i java >nul
+    if not errorlevel 1 (
+        echo [daemon] 已在运行中，PID=!_PID!
+        exit /b 0
+    )
+)
+start /b "" "%JAVA_CMD%" -jar "%JAR%" --mode=daemon %CONFIG_ARG% %PORT_ARG% >> "%DAEMON_DIR%\daemon.log" 2>&1
+echo [daemon] 正在启动...
+timeout /t 2 /nobreak >nul
+"%JAVA_CMD%" -jar "%JAR%" --mode=daemon-status %CONFIG_ARG%
+goto :end
+
+:daemon_stop
+"%JAVA_CMD%" -jar "%JAR%" --mode=daemon-stop %CONFIG_ARG%
+goto :end
+
+:daemon_status
+"%JAVA_CMD%" -jar "%JAR%" --mode=daemon-status %CONFIG_ARG%
+goto :end
+
+:daemon_restart
+"%JAVA_CMD%" -jar "%JAR%" --mode=daemon-stop %CONFIG_ARG%
+timeout /t 1 /nobreak >nul
+if not exist "%DAEMON_DIR%" mkdir "%DAEMON_DIR%"
+start /b "" "%JAVA_CMD%" -jar "%JAR%" --mode=daemon %CONFIG_ARG% %PORT_ARG% >> "%DAEMON_DIR%\daemon.log" 2>&1
+echo [daemon] 正在启动...
+timeout /t 2 /nobreak >nul
+"%JAVA_CMD%" -jar "%JAR%" --mode=daemon-status %CONFIG_ARG%
+goto :end
+
+:interactive
+"%JAVA_CMD%" -jar "%JAR%" -i %CONFIG_ARG%
+
+:end
+endlocal
+'@
+
+$batContent | Set-Content "$INSTALL_DIR\myclaw.bat" -Encoding ASCII
+Success "已创建 $INSTALL_DIR\myclaw.bat"
+
+# ── 5. 创建桌面快捷方式 ──────────────────────────────────────────────────
+Info "创建桌面快捷方式..."
+$desktopPath = [System.Environment]::GetFolderPath("Desktop")
+$shortcutPath = "$desktopPath\MyClaw.lnk"
+$wsh = New-Object -ComObject WScript.Shell
+$shortcut = $wsh.CreateShortcut($shortcutPath)
+$shortcut.TargetPath       = "cmd.exe"
+$shortcut.Arguments        = "/k `"$INSTALL_DIR\myclaw.bat`" -i"
+$shortcut.WorkingDirectory = $INSTALL_DIR
+$shortcut.Description      = "MyClaw AI 助手"
+$shortcut.Save()
+Success "已创建桌面快捷方式 MyClaw.lnk"
+
+# ── 6. 配置环境变量 ──────────────────────────────────────────────────────
 Info "配置环境变量..."
 
 # 配置 JAVA_HOME（仅在自装 JRE 时）
@@ -188,6 +295,9 @@ Success "配置已写入 $CONFIG_FILE"
 Write-Host ""
 Write-Host "  [v] MyClaw 安装完成！" -ForegroundColor Green
 Write-Host "  ────────────────────────────────────"
-Write-Host "  重新打开 PowerShell 后运行: " -NoNewline
+Write-Host "  · 桌面双击 " -NoNewline
+Write-Host "MyClaw" -ForegroundColor White -NoNewline
+Write-Host " 图标即可启动"
+Write-Host "  · 或重新打开 PowerShell 后输入: " -NoNewline
 Write-Host "myclaw" -ForegroundColor White
 Write-Host ""

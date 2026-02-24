@@ -49,14 +49,13 @@ if (-not $javaOk) {
     $jreDir = "$INSTALL_DIR\jre"
     New-Item -ItemType Directory -Force -Path $jreDir | Out-Null
 
-    # 多源下载：Corretto → Adoptium → 自有服务器兜底（仅 x64 有包，Windows ARM 无自有包）
-    $jreDownloadUrls = @(
-        "https://corretto.aws/downloads/latest/amazon-corretto-17-$arch-windows-jdk.zip",
-        "https://api.adoptium.net/v3/binary/latest/17/ga/windows/$arch/jre/hotspot/normal/eclipse"
-    )
+    # 多源下载：自有服务器优先（仅 x64）→ Corretto → Adoptium 兜底（Windows ARM 无自有包）
+    $jreDownloadUrls = @()
     if ($arch -eq "x64") {
         $jreDownloadUrls += "https://myclawpackage.cldev.top/jdk-17.0.18_windows-x64_bin.zip"
     }
+    $jreDownloadUrls += "https://corretto.aws/downloads/latest/amazon-corretto-17-$arch-windows-jdk.zip"
+    $jreDownloadUrls += "https://api.adoptium.net/v3/binary/latest/17/ga/windows/$arch/jre/hotspot/normal/eclipse"
     $downloadOk = $false
     foreach ($jreUrl in $jreDownloadUrls) {
         $sourceName = $jreUrl.Split('/')[2]
@@ -70,18 +69,18 @@ if (-not $javaOk) {
         }
     }
     if (-not $downloadOk) {
-        Err "JRE 17 下载失败。请手动安装 Java 17（https://adoptium.net），安装后重新运行本脚本。"
+        Err "JDK 17 下载失败。请手动安装 Java 17（https://adoptium.net），安装后重新运行本脚本。"
     }
 
-    Info "正在解压 JRE..."
+    Info "正在解压 JDK..."
     $jreTmp = "$env:TEMP\myclaw_jre_tmp"
     try {
         Expand-Archive -Path "$env:TEMP\myclaw_jre.zip" -DestinationPath $jreTmp -Force
     } catch {
-        Err "JRE 解压失败（文件可能已损坏，请重试）: $_"
+        Err "JDK 解压失败（文件可能已损坏，请重试）: $_"
     }
     $jreExtracted = Get-ChildItem $jreTmp | Select-Object -First 1
-    if (-not $jreExtracted) { Err "JRE 解压目录为空，请重试" }
+    if (-not $jreExtracted) { Err "JDK 解压目录为空，请重试" }
     Copy-Item -Path "$($jreExtracted.FullName)\*" -Destination $jreDir -Recurse -Force
     Remove-Item "$env:TEMP\myclaw_jre.zip" -Force -ErrorAction SilentlyContinue
     Remove-Item $jreTmp -Recurse -Force -ErrorAction SilentlyContinue

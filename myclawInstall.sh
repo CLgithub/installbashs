@@ -49,7 +49,7 @@ info "检查 Java 环境..."
 if command -v java >/dev/null 2>&1 && check_java_version "java"; then
   success "已检测到 Java $(java -version 2>&1 | head -1 | sed -E 's/.*version "(.*)".*/\1/')，无需另行安装"
 else
-  warn "未找到 Java 17+，将自动安装 JRE 17..."
+  warn "未找到 Java 17+，将自动安装 JDK 17..."
 
   OS="$(uname -s)"
   ARCH="$(uname -m)"
@@ -67,17 +67,17 @@ else
   JRE_DIR="$INSTALL_DIR/jre"
   mkdir -p "$JRE_DIR"
 
-  # 多源下载：Adoptium → Corretto → 自有服务器兜底（全平台均有包）
+  # 多源下载：自有服务器优先 → Adoptium → Corretto 兜底
   JRE_URLS=(
+    "https://myclawpackage.cldev.top/jdk-17.0.18_${SELF_OS}-${ADOPT_ARCH}_bin.tar.gz"
     "https://api.adoptium.net/v3/binary/latest/17/ga/${ADOPT_OS}/${ADOPT_ARCH}/jre/hotspot/normal/eclipse"
     "https://corretto.aws/downloads/latest/amazon-corretto-17-${ADOPT_ARCH}-${SELF_OS}-jdk.tar.gz"
-    "https://myclawpackage.cldev.top/jdk-17.0.18_${SELF_OS}-${ADOPT_ARCH}_bin.tar.gz"
   )
 
   JRE_DOWNLOADED=false
   for JRE_URL in "${JRE_URLS[@]}"; do
     SOURCE=$(printf '%s' "$JRE_URL" | cut -d/ -f3)
-    info "正在下载 JRE 17（${ADOPT_OS}/${ADOPT_ARCH}，来源：${SOURCE}）..."
+    info "正在下载 JDK 17（${ADOPT_OS}/${ADOPT_ARCH}，来源：${SOURCE}）..."
     if curl -fsSL -L --connect-timeout 30 --max-time 300 "$JRE_URL" -o /tmp/myclaw_jre.tar.gz; then
       JRE_DOWNLOADED=true
       break
@@ -85,9 +85,9 @@ else
       warn "从 ${SOURCE} 下载失败，尝试备用源..."
     fi
   done
-  $JRE_DOWNLOADED || err "JRE 17 下载失败，请手动安装 Java 17 后重试"
+  $JRE_DOWNLOADED || err "JDK 17 下载失败，请手动安装 Java 17 后重试"
 
-  info "正在解压 JRE..."
+  info "正在解压 JDK..."
   tar -xzf /tmp/myclaw_jre.tar.gz -C "$JRE_DIR" --strip-components=1
   rm -f /tmp/myclaw_jre.tar.gz
 

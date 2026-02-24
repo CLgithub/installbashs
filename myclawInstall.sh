@@ -195,10 +195,14 @@ fi
 
 success "配置已写入 $CONFIG_FILE"
 
+# ── 8. source Shell 配置 ─────────────────────────────────────────────────
+# shellcheck disable=SC1090
+source "$SHELL_RC" 2>/dev/null && success "已加载 $SHELL_RC" || warn "source 失败，请手动执行: source $SHELL_RC"
+
 # ── 完成 ─────────────────────────────────────────────────────────────────
 echo ""
 printf "${GREEN}${BOLD}  ✓ MyClaw 安装完成！${NC}\n"
 echo "  ────────────────────────────────────"
-printf "  重新打开终端后运行: ${BOLD}myclaw${NC}\n"
-printf "  或立即运行:         ${BOLD}sh $INSTALL_DIR/myclaw.sh${NC}\n"
+printf "  当前终端运行: ${BOLD}myclaw${NC}\n"
+printf "  或直接运行:   ${BOLD}sh $INSTALL_DIR/myclaw.sh${NC}\n"
 echo ""

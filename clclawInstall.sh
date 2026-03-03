@@ -147,13 +147,11 @@ CONFIG_FILE="$INSTALL_DIR/application.properties"
 
 if [[ -f "$CONFIG_FILE" ]]; then
   if grep -q "^license.key=" "$CONFIG_FILE"; then
-    if [[ "$(uname)" == "Darwin" ]]; then
-      sed -i '' "s|^license.key=.*|license.key=${LICENSE_KEY}|" "$CONFIG_FILE"
-    else
-      sed -i "s|^license.key=.*|license.key=${LICENSE_KEY}|" "$CONFIG_FILE"
-    fi
+    LICENSE_KEY="$LICENSE_KEY" awk \
+      '/^license\.key=/{print "license.key=" ENVIRON["LICENSE_KEY"]; next} {print}' \
+      "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
   else
-    echo "license.key=${LICENSE_KEY}" >> "$CONFIG_FILE"
+    printf 'license.key=%s\n' "$LICENSE_KEY" >> "$CONFIG_FILE"
   fi
 else
   printf 'license.key=%s\n' "$LICENSE_KEY" > "$CONFIG_FILE"

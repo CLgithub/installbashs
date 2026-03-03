@@ -169,7 +169,7 @@ if (Test-Path $CONFIG_FILE) {
         $content = $content -replace "(?m)^license\.key=.*", "license.key=$LICENSE_KEY"
         $content | Set-Content $CONFIG_FILE -NoNewline
     } else {
-        "`nlicense.key=$LICENSE_KEY" | Add-Content $CONFIG_FILE
+        "license.key=$LICENSE_KEY" | Add-Content $CONFIG_FILE
     }
 } else {
     "license.key=$LICENSE_KEY" | Set-Content $CONFIG_FILE
@@ -182,7 +182,7 @@ Write-Host ""
 Write-Host "  [v] ClClaw 安装完成！" -ForegroundColor Green
 Write-Host "  ────────────────────────────────────"
 Write-Host "  运行命令: " -NoNewline
-Write-Host "clclaw start" -ForegroundColor White
+Write-Host ".\clclaw.bat start" -ForegroundColor White
 Write-Host ""
 
 $runNow = Read-Host "  立即启动 ClClaw？[Y/n]"

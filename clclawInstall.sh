@@ -21,12 +21,13 @@ read_tty() {
 }
 
 # ── 配置 ────────────────────────────────────────────────────────────────
-INSTALL_DIR="$HOME/clclaw"
+INSTALL_DIR="$PWD"
 JAR_URL="https://clclawpackage.cldev.top/clclaw-latest.jar"
 
 echo ""
 printf "${BOLD}  ClClaw 安装程序${NC}\n"
 echo "  ────────────────────────────────────"
+printf "  安装目录: %s\n" "$INSTALL_DIR"
 echo ""
 
 # ── 1. 依赖检查 ──────────────────────────────────────────────────────────
@@ -102,7 +103,6 @@ fi
 
 # ── 3. 下载 ClClaw ───────────────────────────────────────────────────────
 info "正在下载 ClClaw..."
-mkdir -p "$INSTALL_DIR"
 curl -fsSL "$JAR_URL" -o "$INSTALL_DIR/clclaw-latest.jar" || err "下载失败，请检查网络连接"
 success "程序已安装到 $INSTALL_DIR"
 
@@ -116,58 +116,33 @@ JAR=$(ls "$DIR"/clclaw-*.jar 2>/dev/null | tail -1)
 [[ -z "$JAR" ]] && { echo "错误: 找不到 JAR 文件" >&2; exit 1; }
 JAVA_CMD=java
 [[ -x "$DIR/jre/bin/java" ]] && JAVA_CMD="$DIR/jre/bin/java"
+[[ -x "$DIR/jre/Contents/Home/bin/java" ]] && JAVA_CMD="$DIR/jre/Contents/Home/bin/java"
 exec "$JAVA_CMD" -jar "$JAR" "$@"
 WRAPPER_EOF
 chmod +x "$WRAPPER"
 success "已创建 $WRAPPER"
 
-# ── 5. 配置 Shell 环境（PATH）──────────────────────────────────────────
-info "配置 Shell 环境..."
-
-if [[ "${SHELL:-}" == */zsh ]] || [[ -n "${ZSH_VERSION:-}" ]]; then
-  SHELL_RC="$HOME/.zshrc"
-elif [[ "$(uname)" == "Darwin" ]]; then
-  SHELL_RC="$HOME/.zprofile"
-else
-  SHELL_RC="$HOME/.bashrc"
-fi
-
-if [[ -n "$JAVA_HOME_CUSTOM" ]]; then
-  if grep -qF "CLCLAW_JAVA_HOME" "$SHELL_RC" 2>/dev/null; then
-    warn "JAVA_HOME 配置已存在，跳过"
-  else
-    printf '\n# ClClaw JRE\nexport CLCLAW_JAVA_HOME="%s"\nexport PATH="$CLCLAW_JAVA_HOME/bin:$PATH"\n' \
-      "$JAVA_HOME_CUSTOM" >> "$SHELL_RC"
-    success "已写入 JAVA_HOME 到 $SHELL_RC"
-  fi
-  export PATH="$JAVA_HOME_CUSTOM/bin:$PATH"
-fi
-
-if grep -qF "$INSTALL_DIR" "$SHELL_RC" 2>/dev/null; then
-  warn "PATH 配置已存在，跳过"
-else
-  printf '\n# ClClaw\nexport PATH="%s:$PATH"\n' "$INSTALL_DIR" >> "$SHELL_RC"
-  success "已写入 PATH 到 $SHELL_RC"
-fi
-
-# ── 6. 配置授权码 ────────────────────────────────────────────────────────
+# ── 5. 配置授权码 ────────────────────────────────────────────────────────
 echo ""
 printf "${BOLD}  配置授权码${NC}\n"
 echo "  ────────────────────────────────────"
-echo "  授权码用于激活 ClClaw，首次登录官网自动生成。"
-echo ""
-echo "  获取方式："
-echo "  1. 访问 https://clclaw.ai/"
-echo "  2. 注册/登录 → 进入「控制台」→ 复制授权码"
-echo ""
 
-LICENSE_KEY=""
-while [[ -z "$LICENSE_KEY" ]]; do
-  read_tty "  请输入授权码: " LICENSE_KEY
-  [[ -z "$LICENSE_KEY" ]] && warn "授权码不能为空，请重新输入"
-done
+if [[ -n "${LICENSE_KEY:-}" ]]; then
+  success "已从安装命令获取授权码"
+else
+  echo "  授权码用于激活 ClClaw，首次登录官网自动生成。"
+  echo ""
+  echo "  获取方式："
+  echo "  1. 访问 https://clclaw.ai/"
+  echo "  2. 注册/登录 → 进入「控制台」→ 复制安装命令"
+  echo ""
+  while [[ -z "${LICENSE_KEY:-}" ]]; do
+    read_tty "  请输入授权码: " LICENSE_KEY
+    [[ -z "$LICENSE_KEY" ]] && warn "授权码不能为空，请重新输入"
+  done
+fi
 
-# ── 7. 写入配置文件 ──────────────────────────────────────────────────────
+# ── 6. 写入配置文件 ──────────────────────────────────────────────────────
 CONFIG_FILE="$INSTALL_DIR/application.properties"
 
 if [[ -f "$CONFIG_FILE" ]]; then
@@ -186,12 +161,17 @@ fi
 
 success "配置已写入 $CONFIG_FILE"
 
-# ── 8. 完成 ──────────────────────────────────────────────────────────────
+# ── 7. 完成 & 询问是否立即启动 ──────────────────────────────────────────
 echo ""
 printf "${GREEN}${BOLD}  ✓ ClClaw 安装完成！${NC}\n"
 echo "  ────────────────────────────────────"
-printf "  执行以下命令使配置立即生效:\n"
-printf "  ${BOLD}source %s${NC}\n" "$SHELL_RC"
+printf "  运行命令: ${BOLD}./clclaw start${NC}\n"
 echo ""
-printf "  之后运行: ${BOLD}clclaw --daemon-start${NC}\n"
+
+RUN_NOW=""
+read_tty "  立即启动 ClClaw？[Y/n] " RUN_NOW
+if [[ -z "$RUN_NOW" || "$RUN_NOW" =~ ^[Yy] ]]; then
+  echo ""
+  "$INSTALL_DIR/clclaw" start
+fi
 echo ""

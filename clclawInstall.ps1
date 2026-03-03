@@ -12,12 +12,13 @@ function Warn    { param($msg) Write-Host "  [!] $msg" -ForegroundColor Yellow }
 function Err     { param($msg) Write-Host "  [x] $msg" -ForegroundColor Red; Write-Host ""; Write-Host "  按任意键退出..." -ForegroundColor Gray; try { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") } catch {}; exit 1 }
 
 # ── 配置 ────────────────────────────────────────────────────────────────
-$INSTALL_DIR = "$HOME\clclaw"
+$INSTALL_DIR = (Get-Location).Path
 $JAR_URL     = "https://clclawpackage.cldev.top/clclaw-latest.jar"
 
 Write-Host ""
 Write-Host "  ClClaw 安装程序" -ForegroundColor White -BackgroundColor DarkGray
 Write-Host "  ────────────────────────────────────"
+Write-Host "  安装目录: $INSTALL_DIR"
 Write-Host ""
 
 # ── 1. 检查执行策略 ──────────────────────────────────────────────────────
@@ -92,7 +93,6 @@ if (-not $javaOk) {
 
 # ── 3. 下载 ClClaw ───────────────────────────────────────────────────────
 Info "正在下载 ClClaw..."
-New-Item -ItemType Directory -Force -Path $INSTALL_DIR | Out-Null
 try {
     Invoke-WebRequest -Uri $JAR_URL -OutFile "$INSTALL_DIR\clclaw-latest.jar" -UseBasicParsing
 } catch {
@@ -139,51 +139,28 @@ URL=http://127.0.0.1:18788
 "@ | Set-Content "$desktopPath\ClClaw.url" -Encoding ASCII
 Success "已创建桌面快捷方式 ClClaw.url"
 
-# ── 6. 配置环境变量 ──────────────────────────────────────────────────────
-Info "配置环境变量..."
-
-if ($javaHomeCustom) {
-    $existingJavaHome = [System.Environment]::GetEnvironmentVariable("CLCLAW_JAVA_HOME", "User")
-    if (-not $existingJavaHome) {
-        [System.Environment]::SetEnvironmentVariable("CLCLAW_JAVA_HOME", $javaHomeCustom, "User")
-        $userPath = [System.Environment]::GetEnvironmentVariable("PATH", "User")
-        if ($userPath -notlike "*$javaHomeCustom\bin*") {
-            [System.Environment]::SetEnvironmentVariable("PATH", "$javaHomeCustom\bin;$userPath", "User")
-        }
-        $env:PATH = "$javaHomeCustom\bin;$env:PATH"
-        Success "已配置 JAVA_HOME → $javaHomeCustom"
-    } else {
-        Warn "JAVA_HOME 已存在，跳过"
-    }
-}
-
-$userPath = [System.Environment]::GetEnvironmentVariable("PATH", "User")
-if ($userPath -notlike "*$INSTALL_DIR*") {
-    [System.Environment]::SetEnvironmentVariable("PATH", "$INSTALL_DIR;$userPath", "User")
-    $env:PATH = "$INSTALL_DIR;$env:PATH"
-    Success "已将 $INSTALL_DIR 添加到 PATH"
-} else {
-    Warn "PATH 已包含 ClClaw 目录，跳过"
-}
-
-# ── 7. 配置授权码 ────────────────────────────────────────────────────────
+# ── 6. 配置授权码 ────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "  配置授权码" -ForegroundColor White
 Write-Host "  ────────────────────────────────────"
-Write-Host "  授权码用于激活 ClClaw，首次登录官网自动生成。"
-Write-Host ""
-Write-Host "  获取方式："
-Write-Host "  1. 访问 https://clclaw.ai/"
-Write-Host "  2. 注册/登录 → 进入「控制台」→ 复制授权码"
-Write-Host ""
 
-$LICENSE_KEY = ""
-do {
-    $LICENSE_KEY = Read-Host "  请输入授权码"
-    if ([string]::IsNullOrWhiteSpace($LICENSE_KEY)) { Warn "授权码不能为空，请重新输入" }
-} while ([string]::IsNullOrWhiteSpace($LICENSE_KEY))
+$LICENSE_KEY = $env:LICENSE_KEY
+if ($LICENSE_KEY) {
+    Success "已从安装命令获取授权码"
+} else {
+    Write-Host "  授权码用于激活 ClClaw，首次登录官网自动生成。"
+    Write-Host ""
+    Write-Host "  获取方式："
+    Write-Host "  1. 访问 https://clclaw.ai/"
+    Write-Host "  2. 注册/登录 → 进入「控制台」→ 复制安装命令"
+    Write-Host ""
+    do {
+        $LICENSE_KEY = Read-Host "  请输入授权码"
+        if ([string]::IsNullOrWhiteSpace($LICENSE_KEY)) { Warn "授权码不能为空，请重新输入" }
+    } while ([string]::IsNullOrWhiteSpace($LICENSE_KEY))
+}
 
-# ── 8. 写入配置文件 ──────────────────────────────────────────────────────
+# ── 7. 写入配置文件 ──────────────────────────────────────────────────────
 $CONFIG_FILE = "$INSTALL_DIR\application.properties"
 
 if (Test-Path $CONFIG_FILE) {
@@ -200,15 +177,17 @@ if (Test-Path $CONFIG_FILE) {
 
 Success "配置已写入 $CONFIG_FILE"
 
-# ── 9. 完成 ──────────────────────────────────────────────────────────────
+# ── 8. 完成 & 询问是否立即启动 ──────────────────────────────────────────
 Write-Host ""
 Write-Host "  [v] ClClaw 安装完成！" -ForegroundColor Green
 Write-Host "  ────────────────────────────────────"
-Write-Host "  · 先运行: " -NoNewline
-Write-Host "clclaw --daemon-start" -ForegroundColor White
-Write-Host "  · 再双击桌面 " -NoNewline
-Write-Host "ClClaw" -ForegroundColor White -NoNewline
-Write-Host " 图标打开 Web 客户端"
-Write-Host "  · 或重新打开终端后输入: " -NoNewline
-Write-Host "clclaw --daemon-start" -ForegroundColor White
+Write-Host "  运行命令: " -NoNewline
+Write-Host "clclaw start" -ForegroundColor White
+Write-Host ""
+
+$runNow = Read-Host "  立即启动 ClClaw？[Y/n]"
+if ([string]::IsNullOrWhiteSpace($runNow) -or $runNow -match '^[Yy]') {
+    Write-Host ""
+    & "$INSTALL_DIR\clclaw.bat" start
+}
 Write-Host ""

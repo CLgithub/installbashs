@@ -105,12 +105,9 @@ Info "创建 clclaw.bat 启动脚本..."
 
 $batContent = @'
 @echo off
-setlocal enabledelayedexpansion
-
 set "SCRIPT_DIR=%~dp0"
 set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 
-:: 查找 JAR 文件（与脚本同目录）
 set "JAR="
 for %%f in ("%SCRIPT_DIR%\clclaw-*.jar") do set "JAR=%%f"
 
@@ -120,11 +117,11 @@ if not defined JAR (
     exit /b 1
 )
 
-:: 优先使用自带 JRE
 set "JAVA_CMD=java"
 if exist "%SCRIPT_DIR%\jre\bin\java.exe" set "JAVA_CMD=%SCRIPT_DIR%\jre\bin\java.exe"
 
 "%JAVA_CMD%" -jar "%JAR%" %*
+exit /b %ERRORLEVEL%
 '@
 
 $batContent | Set-Content "$INSTALL_DIR\clclaw.bat" -Encoding ASCII

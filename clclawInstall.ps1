@@ -12,8 +12,10 @@ function Warn    { param($msg) Write-Host "  [!] $msg" -ForegroundColor Yellow }
 function Err     { param($msg) Write-Host "  [x] $msg" -ForegroundColor Red; Write-Host ""; Write-Host "  按任意键退出..." -ForegroundColor Gray; try { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") } catch {}; exit 1 }
 
 # ── 配置 ────────────────────────────────────────────────────────────────
-$INSTALL_DIR = (Get-Location).Path
+$INSTALL_DIR = Join-Path (Get-Location).Path "clclaw"
 $JAR_URL     = "https://clclawpackage.cldev.top/clclaw-latest.jar"
+
+New-Item -ItemType Directory -Force -Path $INSTALL_DIR | Out-Null
 
 Write-Host ""
 Write-Host "  ClClaw 安装程序" -ForegroundColor White -BackgroundColor DarkGray
@@ -179,7 +181,7 @@ Write-Host ""
 Write-Host "  [v] ClClaw 安装完成！" -ForegroundColor Green
 Write-Host "  ────────────────────────────────────"
 Write-Host "  运行命令: " -NoNewline
-Write-Host ".\clclaw.bat start" -ForegroundColor White
+Write-Host "cd clclaw; .\clclaw.bat start" -ForegroundColor White
 Write-Host ""
 
 $runNow = Read-Host "  立即启动 ClClaw？[Y/n]"

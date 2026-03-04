@@ -21,8 +21,10 @@ read_tty() {
 }
 
 # ── 配置 ────────────────────────────────────────────────────────────────
-INSTALL_DIR="$PWD"
+INSTALL_DIR="$PWD/clclaw"
 JAR_URL="https://clclawpackage.cldev.top/clclaw-latest.jar"
+
+mkdir -p "$INSTALL_DIR"
 
 echo ""
 printf "${BOLD}  ClClaw 安装程序${NC}\n"
@@ -163,7 +165,7 @@ success "配置已写入 $CONFIG_FILE"
 echo ""
 printf "${GREEN}${BOLD}  ✓ ClClaw 安装完成！${NC}\n"
 echo "  ────────────────────────────────────"
-printf "  运行命令: ${BOLD}./clclaw start${NC}\n"
+printf "  运行命令: ${BOLD}cd clclaw && ./clclaw start${NC}\n"
 echo ""
 
 RUN_NOW=""

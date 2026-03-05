@@ -122,8 +122,11 @@ if not defined JAR (
 set "JAVA_CMD=java"
 if exist "%SCRIPT_DIR%\jre\bin\java.exe" set "JAVA_CMD=%SCRIPT_DIR%\jre\bin\java.exe"
 
+pushd "%SCRIPT_DIR%" >nul
 "%JAVA_CMD%" -jar "%JAR%" %*
-exit /b %ERRORLEVEL%
+set "EXITCODE=%ERRORLEVEL%"
+popd >nul
+exit /b %EXITCODE%
 '@
 
 $batContent | Set-Content "$INSTALL_DIR\clclaw.bat" -Encoding ASCII
@@ -187,6 +190,8 @@ Write-Host ""
 $runNow = Read-Host "  立即启动 ClClaw？[Y/n]"
 if ([string]::IsNullOrWhiteSpace($runNow) -or $runNow -match '^[Yy]') {
     Write-Host ""
+    Push-Location $INSTALL_DIR
     & "$INSTALL_DIR\clclaw.bat" start
+    Pop-Location
 }
 Write-Host ""

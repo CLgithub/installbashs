@@ -22,6 +22,8 @@ Write-Host "  ClClaw 安装程序" -ForegroundColor White -BackgroundColor DarkG
 Write-Host "  ────────────────────────────────────"
 Write-Host "  安装目录: $INSTALL_DIR"
 Write-Host ""
+Read-Host "  按 Enter 继续安装，Ctrl+C 取消" | Out-Null
+Write-Host ""
 
 # ── 1. 检查执行策略 ──────────────────────────────────────────────────────
 $policy = Get-ExecutionPolicy -Scope CurrentUser

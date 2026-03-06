@@ -31,6 +31,8 @@ printf "${BOLD}  ClClaw 安装程序${NC}\n"
 echo "  ────────────────────────────────────"
 printf "  安装目录: %s\n" "$INSTALL_DIR"
 echo ""
+read_tty "  按 Enter 继续安装，Ctrl+C 取消..." _confirm
+echo ""
 
 # ── 1. 依赖检查 ──────────────────────────────────────────────────────────
 command -v curl >/dev/null 2>&1 || err "缺少依赖: curl，请先安装后重试"

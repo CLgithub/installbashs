@@ -145,8 +145,8 @@ Success "已创建桌面快捷方式 ClClaw.url"
 Write-Host ""
 Write-Host "  [v] ClClaw 安装完成！" -ForegroundColor Green
 Write-Host "  ────────────────────────────────────"
-Write-Host " 设置开机自动启动" -NoNewline
-Write-Host " 若设置开机不自动启动，需要到安装目录执行启动命令启动" -NoNewline
+Write-Host " 设置开机自动启动" 
+Write-Host " 若不设置开机自动启动，需要到安装目录执行启动命令"
 Write-Host "  启动命令: " -NoNewline
 Write-Host "cd clclaw; .\clclaw.bat start" -ForegroundColor White
 Write-Host ""

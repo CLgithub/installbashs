@@ -145,13 +145,10 @@ Success "已创建桌面快捷方式 ClClaw.url"
 Write-Host ""
 Write-Host "  [v] ClClaw 安装完成！" -ForegroundColor Green
 Write-Host "  ────────────────────────────────────"
+Write-Host " 设置开机自动启动" -NoNewline
+Write-Host " 若设置开机不自动启动，需要到安装目录执行启动命令启动" -NoNewline
 Write-Host "  启动命令: " -NoNewline
 Write-Host "cd clclaw; .\clclaw.bat start" -ForegroundColor White
-Write-Host ""
-Write-Host "  下一步：登录账号" -ForegroundColor White
-Write-Host "  启动后运行 " -NoNewline
-Write-Host "cd clclaw; .\clclaw.bat login" -ForegroundColor White -NoNewline
-Write-Host " 完成登录，或在 Web 界面点击「登录」按钮。"
 Write-Host ""
 
 $autoStart = Read-Host "  是否设置开机自动启动 ClClaw？[Y/n]"
@@ -177,8 +174,10 @@ if ([string]::IsNullOrWhiteSpace($runNow) -or $runNow -match '^[Yy]') {
     & "$INSTALL_DIR\clclaw.bat" start
     Pop-Location
     Write-Host ""
-    Write-Host "  登录提醒：运行 " -NoNewline
+    Write-Host "  下一步：登录账号" -ForegroundColor White
+    Write-Host "  启动后运行 " -NoNewline
     Write-Host "cd clclaw; .\clclaw.bat login" -ForegroundColor White -NoNewline
-    Write-Host " 登录你的账号"
+    Write-Host " 完成登录，或在 Web 界面点击「登录」按钮。"
+    Write-Host ""   
 }
 Write-Host ""

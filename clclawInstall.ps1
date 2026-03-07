@@ -165,8 +165,11 @@ if ([string]::IsNullOrWhiteSpace($autoStart) -or $autoStart -match '^[Yy]') {
     $shortcut.WindowStyle = 7
     $shortcut.Save()
     Success "已设置开机自启 (快捷方式保存在启动文件夹)"
+} else {
+    Write-Host "  已跳过设置开机自启。" -ForegroundColor Gray
 }
 
+Write-Host ""
 $runNow = Read-Host "  立即启动 ClClaw？[Y/n]"
 if ([string]::IsNullOrWhiteSpace($runNow) -or $runNow -match '^[Yy]') {
     Write-Host ""

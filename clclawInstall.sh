@@ -126,48 +126,14 @@ WRAPPER_EOF
 chmod +x "$WRAPPER"
 success "已创建 $WRAPPER"
 
-# ── 5. 配置授权码 ────────────────────────────────────────────────────────
-echo ""
-printf "${BOLD}  配置授权码${NC}\n"
-echo "  ────────────────────────────────────"
-
-if [[ -n "${LICENSE_KEY:-}" ]]; then
-  success "已从安装命令获取授权码"
-else
-  echo "  授权码用于激活 ClClaw，首次登录官网自动生成。"
-  echo ""
-  echo "  获取方式："
-  echo "  1. 访问 https://clclaw.ai/"
-  echo "  2. 注册/登录 → 进入「控制台」→ 复制安装命令"
-  echo ""
-  while [[ -z "${LICENSE_KEY:-}" ]]; do
-    read_tty "  请输入授权码: " LICENSE_KEY
-    [[ -z "$LICENSE_KEY" ]] && warn "授权码不能为空，请重新输入"
-  done
-fi
-
-# ── 6. 写入配置文件 ──────────────────────────────────────────────────────
-CONFIG_FILE="$INSTALL_DIR/application.properties"
-
-if [[ -f "$CONFIG_FILE" ]]; then
-  if grep -q "^license.key=" "$CONFIG_FILE"; then
-    LICENSE_KEY="$LICENSE_KEY" awk \
-      '/^license\.key=/{print "license.key=" ENVIRON["LICENSE_KEY"]; next} {print}' \
-      "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
-  else
-    printf 'license.key=%s\n' "$LICENSE_KEY" >> "$CONFIG_FILE"
-  fi
-else
-  printf 'license.key=%s\n' "$LICENSE_KEY" > "$CONFIG_FILE"
-fi
-
-success "配置已写入 $CONFIG_FILE"
-
-# ── 7. 完成 & 询问是否立即启动 ──────────────────────────────────────────
+# ── 5. 完成 & 询问是否立即启动 ──────────────────────────────────────────
 echo ""
 printf "${GREEN}${BOLD}  ✓ ClClaw 安装完成！${NC}\n"
 echo "  ────────────────────────────────────"
-printf "  运行命令: ${BOLD}cd clclaw && ./clclaw start${NC}\n"
+printf "  启动命令: ${BOLD}cd clclaw && ./clclaw start${NC}\n"
+echo ""
+printf "  ${BOLD}下一步：登录账号${NC}\n"
+printf "  启动后运行 ${BOLD}cd clclaw && ./clclaw login${NC} 完成登录，或在 Web 界面点击「登录」按钮。\n"
 echo ""
 
 RUN_NOW=""
@@ -175,5 +141,7 @@ read_tty "  立即启动 ClClaw？[Y/n] " RUN_NOW
 if [[ -z "$RUN_NOW" || "$RUN_NOW" =~ ^[Yy] ]]; then
   echo ""
   "$INSTALL_DIR/clclaw" start
+  echo ""
+  printf "  ${BOLD}登录提醒：${NC}运行 ${BOLD}cd clclaw && ./clclaw login${NC} 登录你的账号\n"
 fi
 echo ""

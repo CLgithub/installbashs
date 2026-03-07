@@ -143,50 +143,17 @@ URL=http://127.0.0.1:18788
 "@ | Set-Content "$desktopPath\ClClaw.url" -Encoding ASCII
 Success "已创建桌面快捷方式 ClClaw.url"
 
-# ── 6. 配置授权码 ────────────────────────────────────────────────────────
-Write-Host ""
-Write-Host "  配置授权码" -ForegroundColor White
-Write-Host "  ────────────────────────────────────"
-
-$LICENSE_KEY = $env:LICENSE_KEY
-if ($LICENSE_KEY) {
-    Success "已从安装命令获取授权码"
-} else {
-    Write-Host "  授权码用于激活 ClClaw，首次登录官网自动生成。"
-    Write-Host ""
-    Write-Host "  获取方式："
-    Write-Host "  1. 访问 https://clclaw.ai/"
-    Write-Host "  2. 注册/登录 → 进入「控制台」→ 复制安装命令"
-    Write-Host ""
-    do {
-        $LICENSE_KEY = Read-Host "  请输入授权码"
-        if ([string]::IsNullOrWhiteSpace($LICENSE_KEY)) { Warn "授权码不能为空，请重新输入" }
-    } while ([string]::IsNullOrWhiteSpace($LICENSE_KEY))
-}
-
-# ── 7. 写入配置文件 ──────────────────────────────────────────────────────
-$CONFIG_FILE = "$INSTALL_DIR\application.properties"
-
-if (Test-Path $CONFIG_FILE) {
-    $content = Get-Content $CONFIG_FILE -Raw -ErrorAction SilentlyContinue
-    if ($content -match "(?m)^license\.key=") {
-        $content = $content -replace "(?m)^license\.key=.*", "license.key=$LICENSE_KEY"
-        $content | Set-Content $CONFIG_FILE -NoNewline
-    } else {
-        "license.key=$LICENSE_KEY" | Add-Content $CONFIG_FILE
-    }
-} else {
-    "license.key=$LICENSE_KEY" | Set-Content $CONFIG_FILE
-}
-
-Success "配置已写入 $CONFIG_FILE"
-
-# ── 8. 完成 & 询问是否立即启动 ──────────────────────────────────────────
+# ── 6. 完成 & 询问是否立即启动 ──────────────────────────────────────────
 Write-Host ""
 Write-Host "  [v] ClClaw 安装完成！" -ForegroundColor Green
 Write-Host "  ────────────────────────────────────"
-Write-Host "  运行命令: " -NoNewline
+Write-Host "  启动命令: " -NoNewline
 Write-Host "cd clclaw; .\clclaw.bat start" -ForegroundColor White
+Write-Host ""
+Write-Host "  下一步：登录账号" -ForegroundColor White
+Write-Host "  启动后运行 " -NoNewline
+Write-Host "cd clclaw; .\clclaw.bat login" -ForegroundColor White -NoNewline
+Write-Host " 完成登录，或在 Web 界面点击「登录」按钮。"
 Write-Host ""
 
 $runNow = Read-Host "  立即启动 ClClaw？[Y/n]"
@@ -195,5 +162,9 @@ if ([string]::IsNullOrWhiteSpace($runNow) -or $runNow -match '^[Yy]') {
     Push-Location $INSTALL_DIR
     & "$INSTALL_DIR\clclaw.bat" start
     Pop-Location
+    Write-Host ""
+    Write-Host "  登录提醒：运行 " -NoNewline
+    Write-Host "cd clclaw; .\clclaw.bat login" -ForegroundColor White -NoNewline
+    Write-Host " 登录你的账号"
 }
 Write-Host ""

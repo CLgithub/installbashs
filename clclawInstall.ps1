@@ -141,7 +141,7 @@ URL=http://127.0.0.1:18788
 "@ | Set-Content "$desktopPath\ClClaw.url" -Encoding ASCII
 Success "已创建桌面快捷方式 ClClaw.url"
 
-# ── 6. 完成 & 询问是否立即启动 ──────────────────────────────────────────
+# ── 6. 完成 & 询问启动和自启设置 ──────────────────────────────────────────
 Write-Host ""
 Write-Host "  [v] ClClaw 安装完成！" -ForegroundColor Green
 Write-Host "  ────────────────────────────────────"
@@ -153,6 +153,19 @@ Write-Host "  启动后运行 " -NoNewline
 Write-Host "cd clclaw; .\clclaw.bat login" -ForegroundColor White -NoNewline
 Write-Host " 完成登录，或在 Web 界面点击「登录」按钮。"
 Write-Host ""
+
+$autoStart = Read-Host "  是否设置开机自动启动 ClClaw？[Y/n]"
+if ([string]::IsNullOrWhiteSpace($autoStart) -or $autoStart -match '^[Yy]') {
+    $startupPath = [System.Environment]::GetFolderPath("Startup")
+    $wshShell = New-Object -ComObject WScript.Shell
+    $shortcut = $wshShell.CreateShortcut("$startupPath\ClClawStart.lnk")
+    $shortcut.TargetPath = "$INSTALL_DIR\clclaw.bat"
+    $shortcut.Arguments = "start"
+    $shortcut.WorkingDirectory = $INSTALL_DIR
+    $shortcut.WindowStyle = 7
+    $shortcut.Save()
+    Success "已设置开机自启 (快捷方式保存在启动文件夹)"
+}
 
 $runNow = Read-Host "  立即启动 ClClaw？[Y/n]"
 if ([string]::IsNullOrWhiteSpace($runNow) -or $runNow -match '^[Yy]') {

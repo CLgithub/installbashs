@@ -12,7 +12,7 @@ function Warn    { param($msg) Write-Host "  [!] $msg" -ForegroundColor Yellow }
 function Err     { param($msg) Write-Host "  [x] $msg" -ForegroundColor Red; Write-Host ""; Write-Host "  按任意键退出..." -ForegroundColor Gray; try { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") } catch {}; exit 1 }
 
 # ── 配置 ────────────────────────────────────────────────────────────────
-$INSTALL_DIR = Join-Path $env:USERPROFILE "clclaw"
+$INSTALL_DIR = Join-Path (Get-Location).Path "clclaw"
 $JAR_URL     = "https://clclawpackage.cldev.top/clclaw-latest.jar"
 
 New-Item -ItemType Directory -Force -Path $INSTALL_DIR | Out-Null
